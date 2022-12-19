@@ -10,3 +10,6 @@ h5py
 pycolmap>=0.3.0
 kornia>=0.6.7
 gdown
+open3d
+faiss-gpu
+faiss-cpu

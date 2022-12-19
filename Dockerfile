@@ -1,8 +1,10 @@
 FROM colmap/colmap:latest
 MAINTAINER Paul-Edouard Sarlin
 ARG PYTHON_VERSION=3.8
+RUN apt-key del 7fa2af80
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
 RUN apt-get update -y
-RUN apt-get install -y unzip wget software-properties-common
+RUN apt-get install -y unzip wget software-properties-common tmux
 RUN add-apt-repository ppa:deadsnakes/ppa && \
     apt-get -y update && \
     apt-get install -y python${PYTHON_VERSION}

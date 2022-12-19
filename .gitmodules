@@ -13,3 +13,6 @@
 [submodule "third_party/disk"]
 	path = third_party/disk
 	url = https://github.com/cvlab-epfl/disk.git
+[submodule "third_party/PatchNetVLAD"]
+	path = third_party/PatchNetVLAD
+	url = https://github.com/QVPR/Patch-NetVLAD.git
