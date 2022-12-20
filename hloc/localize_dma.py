@@ -101,6 +101,23 @@ def get_all_camera_poses(images_path):
                     t = [float(tp) for tp in t.split(",")]
                     intrinsics = np.array(t).reshape((3,3))
                     camera_poses[id]["intrinsics"] = intrinsics
+                    
+                if line.__contains__("quartenion2"):
+                    #print("Line contains quaternion2")
+                    t = line.rstrip()
+                    t = t.replace(" ", "").split("quartenion2")[1].replace("]", "").replace("[", "")
+                    t = [float(tp) for tp in t.split(",")]
+                    qvec = np.array(t)
+                    #print(qvec)
+                    camera_poses[id]["qvec"] = qvec
+                    
+                    
+                if line.__contains__("translation2"):
+                    t = line.rstrip()
+                    t = t.replace(" ", "").split("translation2")[1].replace("]", "").replace("[", "")
+                    t = [float(tp) for tp in t.split(",")]
+                    tvec = np.array(t)
+                    camera_poses[id]["tvec"] = tvec
 
     return camera_poses
 
@@ -148,7 +165,8 @@ def quaternion_rotation_matrix(Q):
 
 def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
                       skip=None):
-
+    print("FEATURE KEYS")
+    print(q, feature_file[q].keys())
     images_path = dataset_dir / "images/"
     q_img = cv2.imread(str(images_path / q))
     height, width = q_img.shape[:2]
@@ -168,9 +186,14 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
     num_matches = 0
 
     for i, r in enumerate(retrieved):
+        print("FEATURE KEYS")
+        print(r, feature_file[r]["image_size"].__array__())
         kpr = feature_file[r]['keypoints'].__array__()
         pair = names_to_pair(q, r)
+        print("MATCH KEYS")
+        print(pair, match_file[pair]["matches0"].shape, match_file[pair]["matching_scores0"].shape)
         m = match_file[pair]['matches0'].__array__()
+        print(m)
         v = (m > -1)
 
         if skip and (np.count_nonzero(v) < skip):
@@ -199,7 +222,6 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
 
         with open(pose_path) as file:
             for line in file:
-                #print(line)
                 if line.__contains__("worldPose"):
                     t = line.rstrip()
                     t = t.replace(" ", "").split("worldPose")[1].replace("]", "").replace("[", "")
@@ -210,19 +232,21 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
                 if line.__contains__("translation "):
                     t = line.rstrip()
                     t = t.replace(" ", "").split("translation")[1].replace("]", "").replace("[", "")
-                    #print(t)
                     t = [float(tp) for tp in t.split(",")]
-                    #print(t)
                     T = np.array(t)
                     T = T
 
                 if line.__contains__("intrinsics"):
                     t = line.rstrip()
-                    #print(t)
                     t = t.replace(" ", "").split("intrinsics")[1].replace("]", "").replace("[", "")
                     t = [float(tp) for tp in t.split(",")]
                     intrinsics = np.array(t).reshape((3,3)).T
-                    print(intrinsics)
+                    
+                if line.__contains__("quaternion2"):
+                    t = line.rstrip()
+                    t = t.replace(" ", "").split("quaternion2")[1].replace("]", "").replace("[", "")
+                    t = [float(tp) for tp in t.split(",")]
+                    quaternion = np.array(t)
         #print(intrinsics, worldPose, T)
 
 

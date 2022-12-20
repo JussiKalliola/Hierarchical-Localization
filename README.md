@@ -25,7 +25,7 @@ Build 3D maps with Structure-from-Motion and localize any Internet image right f
 `hloc` requires Python >=3.7 and PyTorch >=1.1. Installing the package locally pulls the other dependencies:
 
 ```bash
-git clone --recursive https://github.com/cvg/Hierarchical-Localization/
+git clone --recursive https://github.com/JussiKalliola/Hierarchical-Localization/
 cd Hierarchical-Localization/
 python -m pip install -e .
 ```
