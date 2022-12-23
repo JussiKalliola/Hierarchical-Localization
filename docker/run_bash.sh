@@ -7,6 +7,8 @@ xhost + local:
 docker run \
 	-it --rm \
 	-p 8888:8888 \
+    --env="DISPLAY" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
 	--runtime=nvidia \
 	--mount "type=bind,src=$CWD/../datasets/,dst=/app/datasets/" \
 	--mount "type=bind,src=$CWD/../outputs/,dst=/app/outputs/" \

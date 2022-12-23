@@ -163,12 +163,13 @@ def quaternion_rotation_matrix(Q):
     return rot_matrix
 
 
-def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
+def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, match_file,
                       skip=None):
-    print("FEATURE KEYS")
-    print(q, feature_file[q].keys())
-    images_path = dataset_dir / "images/"
-    q_img = cv2.imread(str(images_path / q))
+    #print("FEATURE KEYS")
+    #print(q, feature_file[q].keys())
+    #images_path = dataset_dir / "images/"
+    
+    q_img = cv2.imread(str(images_path / 'query' / q))
     height, width = q_img.shape[:2]
     cx = .5 * width
     cy = .5 * height
@@ -186,18 +187,18 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
     num_matches = 0
 
     for i, r in enumerate(retrieved):
-        print("FEATURE KEYS")
-        print(r, feature_file[r]["image_size"].__array__())
+        #print("FEATURE KEYS")
+        #print(r, feature_file[r]["image_size"].__array__())
         kpr = feature_file[r]['keypoints'].__array__()
         pair = names_to_pair(q, r)
-        print("MATCH KEYS")
-        print(pair, match_file[pair]["matches0"].shape, match_file[pair]["matching_scores0"].shape)
+        #print("MATCH KEYS")
+        #print(pair, match_file[pair]["matches0"].shape, match_file[pair]["matching_scores0"].shape)
         m = match_file[pair]['matches0'].__array__()
-        print(m)
+        #print(m)
         v = (m > -1)
 
         if skip and (np.count_nonzero(v) < skip):
-            print("skipping... ", r)
+            #print("skipping... ", r)
             continue
 
         mkpq, mkpr = kpq[v], kpr[m[v]]
@@ -213,7 +214,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
         #Tr = get_scan_pose(dataset_dir, r)
         pose_path = ""
 
-        for p in (images_path / 'poses/').iterdir():
+        for p in (dataset_dir / 'images' / 'poses/').iterdir():
             id = int(str(p.name).split("_")[0])
 
             if id == img_id:
@@ -223,17 +224,20 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
         with open(pose_path) as file:
             for line in file:
                 if line.__contains__("worldPose"):
+                    worldPose = np.eye(4)
                     t = line.rstrip()
                     t = t.replace(" ", "").split("worldPose")[1].replace("]", "").replace("[", "")
                     t = [float(tp) for tp in t.split(",")]
-                    worldPose = np.array(t).reshape((4,4)).T
-                    print(worldPose)
+                    worldPose[:3, :3] = np.array(t).reshape((3,3)).T
+                    #worldPose = np.array(t).reshape((4,4)).T
+                    #print(worldPose)
 
                 if line.__contains__("translation "):
                     t = line.rstrip()
                     t = t.replace(" ", "").split("translation")[1].replace("]", "").replace("[", "")
                     t = [float(tp) for tp in t.split(",")]
                     T = np.array(t)
+                    worldPose[-1, :3] = T
                     T = T
 
                 if line.__contains__("intrinsics"):
@@ -252,14 +256,14 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
 
         #print(str(r), img_id)
         depthmap_path = ""
-        for p in (images_path / 'depth/').iterdir():
+        for p in (dataset_dir / 'images' / 'depth/').iterdir():
             d_id = int(str(p)[:-4].split("_")[-1])
             if d_id is img_id:
                 depthmap_path = p
                 break
 
         confmap_path = ""
-        for p in (images_path / 'confidence/').iterdir():
+        for p in (dataset_dir / 'images' / 'confidence/').iterdir():
             c_id = int(str(p)[:-4].split("_")[-1])
             if c_id is img_id:
                 confmap_path = p
@@ -287,8 +291,8 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
 
         scan_r = load_depth(depthmap_path)
         confmap = load_conf(confmap_path)
-        print(depthmap_path, confmap_path)
-        print(confmap.shape)
+        #print(depthmap_path, confmap_path)
+        #print(confmap.shape)
 
         #fig, axs = plt.subplots(1,2)
         #axs[0].imshow(scan_r)
@@ -350,7 +354,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
             confInt = confidence*255.0
 
             if np.abs(depth) < 0.05 or np.abs(depth) > 2.5 or confInt < 2:
-                print("CONFIDENCE IS NOT MET")
+                #print("CONFIDENCE IS NOT MET")
                 valid.append(False)
             else:
                 valid.append(True)
@@ -375,7 +379,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
 
             #print(depth)
         mkp3d = np.array(mkp3d)
-        print(mkp3d.shape)
+        #print(mkp3d.shape)
 
         #print(R + T)
         #print(T)
@@ -391,8 +395,8 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
         #all_mkpr.append(mkpr[valid])
         #all_mkp3d.append(mkp3d[valid])
         #all_indices.append(np.full(np.count_nonzero(valid), i))
-        print("VALID")
-        print(valid)
+        #print("VALID")
+        #print(valid)
         all_mkpq.append(mkpq[valid])
         all_mkpr.append(mkpr[valid])
         all_mkp3d.append(mkp3d[valid])
@@ -405,7 +409,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
     all_mkp3d = np.concatenate(all_mkp3d, 0)
     all_indices = np.concatenate(all_indices, 0)
 
-    print(len(all_mkpq), len(all_mkpr), len(all_mkp3d), len(all_indices))
+    #print(len(all_mkpq), len(all_mkpr), len(all_mkp3d), len(all_indices))
 
     cfg = {
         'model': 'SIMPLE_RADIAL',
@@ -419,7 +423,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
     #print("\n\nret:", ret)
     #print(ret)
 
-    print(q)
+    #print(q)
     rvar = [float(ret["qvec"][0]), float(ret["qvec"][1]), float(ret["qvec"][2]), float(ret["qvec"][3])]
 
     # rvar = [float(lvar[0]), float(lvar[1]), float(lvar[2]), float(lvar[2])]
@@ -446,7 +450,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
     #Rt = np.zeros((4,4))
     #Rt = np.c_[R, Tvar.T]
 
-    print(Rt)
+    #print(Rt)
 
     ret["Rt"] = Rt
 
@@ -455,7 +459,7 @@ def pose_from_cluster(dataset_dir, q, retrieved, feature_file, match_file,
     return ret, all_mkpq, all_mkpr, all_mkp3d, all_indices, num_matches
 
 
-def main(dataset_dir, retrieval, features, matches, results,
+def main(dataset_dir, retrieval, images_path, features, matches, results,
          skip_matches=None):
 
     assert retrieval.exists(), retrieval
@@ -464,7 +468,7 @@ def main(dataset_dir, retrieval, features, matches, results,
 
     retrieval_dict = parse_retrieval(retrieval)
     queries = list(retrieval_dict.keys())
-    print(queries)
+    #print(queries)
 
     feature_file = h5py.File(features, 'r', libver='latest')
     match_file = h5py.File(matches, 'r', libver='latest')
@@ -483,7 +487,7 @@ def main(dataset_dir, retrieval, features, matches, results,
     for q in tqdm(queries):
         db = retrieval_dict[q]
         ret, mkpq, mkpr, mkp3d, indices, num_matches = pose_from_cluster(
-            dataset_dir, q, db, feature_file, match_file, skip_matches)
+            dataset_dir, images_path, q, db, feature_file, match_file, skip_matches)
 
         if ret == None:
             continue
@@ -498,7 +502,7 @@ def main(dataset_dir, retrieval, features, matches, results,
             'indices_db': indices,
             'num_matches': num_matches,
         }
-        print(logs['loc'][q]['indices_db'])
+        #print(logs['loc'][q]['indices_db'])
 
     logger.info(f'Writing poses to {results}...')
     with open(results, 'w') as f:

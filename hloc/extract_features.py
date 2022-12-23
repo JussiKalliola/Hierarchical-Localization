@@ -11,7 +11,7 @@ import pprint
 import collections.abc as collections
 import PIL.Image
 
-from . import extractors, logger
+from hloc import extractors, logger
 from .utils.base_model import dynamic_load
 from .utils.parsers import parse_image_lists
 from .utils.io import read_image, list_h5_names
