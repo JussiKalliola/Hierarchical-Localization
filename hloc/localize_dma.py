@@ -70,6 +70,8 @@ def get_all_camera_poses(images_path):
     camera_poses = {}
 
     for pose_path in (images_path / 'poses/').iterdir():
+        if '.DS' in str(pose_path):
+            continue
         id = int(str(pose_path.name).split("_")[0])
         camera_poses[id] = {}
 
@@ -168,7 +170,8 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
     #print("FEATURE KEYS")
     #print(q, feature_file[q].keys())
     #images_path = dataset_dir / "images/"
-    
+    #print(str(images_path / 'query' / q))
+
     q_img = cv2.imread(str(images_path / 'query' / q))
     height, width = q_img.shape[:2]
     cx = .5 * width
@@ -215,6 +218,9 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
         pose_path = ""
 
         for p in (dataset_dir / 'images' / 'poses/').iterdir():
+            if '.DS' in str(p):
+                continue
+
             id = int(str(p.name).split("_")[0])
 
             if id == img_id:
@@ -228,8 +234,8 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
                     t = line.rstrip()
                     t = t.replace(" ", "").split("worldPose")[1].replace("]", "").replace("[", "")
                     t = [float(tp) for tp in t.split(",")]
-                    worldPose[:3, :3] = np.array(t).reshape((3,3)).T
-                    #worldPose = np.array(t).reshape((4,4)).T
+                    #worldPose[:3, :3] = np.array(t).reshape((3,3)).T
+                    worldPose = np.array(t).reshape((4,4)).T
                     #print(worldPose)
 
                 if line.__contains__("translation "):
@@ -237,8 +243,8 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
                     t = t.replace(" ", "").split("translation")[1].replace("]", "").replace("[", "")
                     t = [float(tp) for tp in t.split(",")]
                     T = np.array(t)
-                    worldPose[-1, :3] = T
-                    T = T
+                    #worldPose[-1, :3] = T
+                    #T = T
 
                 if line.__contains__("intrinsics"):
                     t = line.rstrip()
@@ -257,6 +263,8 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
         #print(str(r), img_id)
         depthmap_path = ""
         for p in (dataset_dir / 'images' / 'depth/').iterdir():
+            if '.DS' in str(p):
+                continue
             d_id = int(str(p)[:-4].split("_")[-1])
             if d_id is img_id:
                 depthmap_path = p
@@ -264,6 +272,8 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
 
         confmap_path = ""
         for p in (dataset_dir / 'images' / 'confidence/').iterdir():
+            if '.DS' in str(p):
+                continue
             c_id = int(str(p)[:-4].split("_")[-1])
             if c_id is img_id:
                 confmap_path = p
@@ -424,38 +434,43 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
     #print(ret)
 
     #print(q)
-    rvar = [float(ret["qvec"][0]), float(ret["qvec"][1]), float(ret["qvec"][2]), float(ret["qvec"][3])]
+    if "qvec" in ret:
 
-    # rvar = [float(lvar[0]), float(lvar[1]), float(lvar[2]), float(lvar[2])]
-    # Rotation = transformations.quaternion_matrix(rvar)
-    # Translation = np.eye(4)
-    # Translation[0][3] = float(lvar[4])
-    # Translation[1][3] = float(lvar[5])
-    # Translation[2][3] = float(lvar[6])
-    # Tvar = np.matmul(-Rotation.transpose(),Translation)
+        rvar = [float(ret["qvec"][0]), float(ret["qvec"][1]), float(ret["qvec"][2]), float(ret["qvec"][3])]
 
-    #print(pycolmap.quaternion_matrix(rvar))
+        # rvar = [float(lvar[0]), float(lvar[1]), float(lvar[2]), float(lvar[2])]
+        # Rotation = transformations.quaternion_matrix(rvar)
+        # Translation = np.eye(4)
+        # Translation[0][3] = float(lvar[4])
+        # Translation[1][3] = float(lvar[5])
+        # Translation[2][3] = float(lvar[6])
+        # Tvar = np.matmul(-Rotation.transpose(),Translation)
 
-    R = np.eye(4)
-    R[0:3,0:3] = pycolmap.qvec_to_rotmat(rvar)
-    t = np.eye(4)
-    t[0][3] = float(ret["tvec"][0])
-    t[1][3] = float(ret["tvec"][1])
-    t[2][3] = float(ret["tvec"][2])
-    #t.
-    Rt = np.matmul(-R.transpose(), t) #-R.transpose()  t
-    #Rt = pose_matrix_from_qvec_tvec(ret["qvec"], ret["tvec"]) #-R.transpose() @ t
-    #print(f'x->to right, y->bottom, z->in front')
-    #print(f"x: {Tvar[0]} y: {Tvar[1]} z: {Tvar[2]}")
-    #Rt = np.zeros((4,4))
-    #Rt = np.c_[R, Tvar.T]
+        #print(pycolmap.quaternion_matrix(rvar))
 
-    #print(Rt)
+        R = np.eye(4)
+        R[0:3,0:3] = pycolmap.qvec_to_rotmat(rvar)
+        t = np.eye(4)
+        R[0][-1] = float(ret["tvec"][0])
+        R[1][-1] = float(ret["tvec"][1])
+        R[2][-1] = float(ret["tvec"][2])
+        #t.
+        #Rt = -R.transpose() @ t #np.matmul(-R.transpose(), t) #-R.transpose()  t
+        #Rt = pose_matrix_from_qvec_tvec(ret["qvec"], ret["tvec"]) #-R.transpose() @ t
+        #print(f'x->to right, y->bottom, z->in front')
+        #print(f"x: {Tvar[0]} y: {Tvar[1]} z: {Tvar[2]}")
+        #Rt = np.zeros((4,4))
+        #Rt = np.c_[R, Tvar.T]
 
-    ret["Rt"] = Rt
+        #print(Rt)
 
-    #print(quaternion_rotation_matrix(ret["qvec"]))
-    ret['cfg'] = cfg
+        ret["Rt"] = R
+
+        #print(quaternion_rotation_matrix(ret["qvec"]))
+        ret['cfg'] = cfg
+    else:
+        print(ret)
+        return None, None, None, None, None, None
     return ret, all_mkpq, all_mkpr, all_mkp3d, all_indices, num_matches
 
 

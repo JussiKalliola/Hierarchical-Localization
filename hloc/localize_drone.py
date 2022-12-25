@@ -54,18 +54,24 @@ def get_data_paths_from_name(images_dir, img_path):
     conf_path=""
     
     for p in (images_dir / 'poses/').iterdir():
+        if '.DS' in str(p):
+            continue
         pose_id = int(str(p.stem).split("_")[0])
         if pose_id == img_id:
             pose_path = p
             break
             
     for p in (images_dir / 'depth/').iterdir():
+        if '.DS' in str(p):
+            continue
         d_id = int(str(p.stem).split("_")[-1])
         if d_id is img_id:
             depth_path = p
             break
             
     for p in (images_dir / 'confidence/').iterdir():
+        if '.DS' in str(p):
+            continue
         c_id = int(str(p.stem).split("_")[-1])
         if c_id is img_id:
             conf_path = p
@@ -110,14 +116,13 @@ def get_pose_from_file(pose_path):
                 rline = line.rstrip()
                 rline = rline.replace(" ", "").split("worldPose")[1].replace("]", "").replace("[", "")
                 rline = [float(tp) for tp in rline.split(",")]
-                Rt[:3, :3] = np.array(rline).reshape((3,3)).T
+                Rt = np.array(rline).reshape((4,4)).T
 
             if line.__contains__("translation "):
                 rline = line.rstrip()
                 rline = rline.replace(" ", "").split("translation")[1].replace("]", "").replace("[", "")
                 rline = [float(tp) for tp in rline.split(",")]
                 t = np.array(rline)
-                Rt[-1, :3] = t
 
             if line.__contains__("intrinsics"):
                 rline = line.rstrip()
@@ -239,7 +244,9 @@ def main(dataset_dir, query_dir, db_dir, images_dir, vis_input=False):
     qI = np.eye(3)
     qI[0,0], qI[1,1], qI[0,2], qI[1,2] = 2204.82, 2204.82, 1080, 1920
     
-    for q in queries[:5]:
+    for q in queries[:1]:
+        if '.DS' in q:
+            continue
         print(q)
         altitude = parse_altitude_from_name(q)
         
@@ -256,8 +263,11 @@ def main(dataset_dir, query_dir, db_dir, images_dir, vis_input=False):
         # Calculate new size in meters
         # Downsample the image into the same relative resolution as drone image                            
         resized_references = []
+        resized_ref_names = []
                                     
         for r in references:
+            if '.DS' in r:
+                continue
             rimg = cv2.imread(str(db_dir / r))
             rheigth, rwidth, _ = rimg.shape
             r_resolution = (rheigth, rwidth)
@@ -274,11 +284,14 @@ def main(dataset_dir, query_dir, db_dir, images_dir, vis_input=False):
             new_resolution = calculate_sampling_resolution(img_in_m=r_size_in_m, query_px_ratio=q_px_ratio)
             resized_rimg = downsample_image(img=rimg, resolution=new_resolution)
             resized_references.append(resized_rimg)
+            resized_ref_names.append(r)
         
         # Split the drone image into overlapping tiles using a mean resolution of reference images
         mean_resolution = np.mean([ r.shape[:2] for r in resized_references], axis=0)
         splitted_qimg, nrows, ncols = split_img_into_tiles(img=qimg, window_size=mean_resolution, overlap=(0.1,0.1))
-        
+
+        splitted_qimg.append(qimg)
+
         # Save the splitted images and reference images as new dataset
         tile_db_dir=dataset_dir / "images2" / Path(q).stem / "mapping"
         tile_query_dir=dataset_dir / "images2" / Path(q).stem / "query"
@@ -287,7 +300,7 @@ def main(dataset_dir, query_dir, db_dir, images_dir, vis_input=False):
         tile_query_dir.mkdir(parents=True, exist_ok=True)
         
         # Save new references
-        new_references = save_images_to_path(imgs=resized_references, img_names=references, path=tile_db_dir)
+        new_references = save_images_to_path(imgs=resized_references, img_names=resized_ref_names, path=tile_db_dir)
         new_query = save_images_to_path(imgs=splitted_qimg, img_names=[q], path=tile_query_dir, query=True)
         
         

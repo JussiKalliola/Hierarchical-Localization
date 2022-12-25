@@ -246,7 +246,7 @@ def main(conf: Dict,
     model = Model(conf['model']).eval().to(device)
 
     loader = torch.utils.data.DataLoader(
-        dataset, num_workers=1, shuffle=False, pin_memory=True)
+        dataset, num_workers=0, shuffle=False, pin_memory=True)
     for idx, data in enumerate(tqdm(loader)):
         name = dataset.names[idx]
         pred = model({'image': data['image'].to(device, non_blocking=True)})
