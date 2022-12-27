@@ -1,11 +1,13 @@
 from matplotlib import cm
+import matplotlib
 import random
 import numpy as np
 import pickle
 import pycolmap
+from pathlib import Path
 
 from .utils.viz import (
-        plot_images, plot_keypoints, plot_matches, cm_RdGn, add_text)
+        plot_images, plot_keypoints, plot_matches, cm_RdGn, add_text, save_plot)
 from .utils.io import read_image
 
 
@@ -53,8 +55,8 @@ def visualize_sfm_2d(reconstruction, image_dir, color_by='visibility',
         add_text(0, name, pos=(0.01, 0.01), fs=5, lcolor=None, va='bottom')
 
 
-def visualize_loc(results, image_dir, reconstruction=None, db_image_dir=None,
-                  selected=[], n=1, seed=0, prefix=None, **kwargs):
+def visualize_loc(results, outputs_dir, image_dir, reconstruction=None, db_image_dir=None,
+                  selected=[], n=1, seed=0, prefix=None, show_plots=True, save_plots=True, **kwargs):
     assert image_dir.exists()
 
     with open(str(results)+'_logs.pkl', 'rb') as f:
@@ -72,12 +74,26 @@ def visualize_loc(results, image_dir, reconstruction=None, db_image_dir=None,
 
     for qname in selected:
         loc = logs['loc'][qname]
-        visualize_loc_from_log(
-            image_dir, qname, loc, reconstruction, db_image_dir, **kwargs)
+
+        outputs_qname_dir = outputs_dir / Path(qname).stem
+        outputs_qname_dir.mkdir(parents=True, exist_ok=True)
+
+        visualize_loc_from_log(image_dir=image_dir, 
+        outputs_dir=outputs_qname_dir, 
+        query_name=qname, 
+        loc=loc, 
+        reconstruction=reconstruction, 
+        db_image_dir=db_image_dir,
+        show_plots=show_plots, 
+        save_plots=save_plots, 
+        **kwargs)
 
 
-def visualize_loc_from_log(image_dir, query_name, loc, reconstruction=None,
-                           db_image_dir=None, top_k_db=2, dpi=75):
+def visualize_loc_from_log(image_dir, outputs_dir, query_name, loc, reconstruction=None,
+                           db_image_dir=None, top_k_db=2, dpi=75, show_plots=True, save_plots=True):
+
+    if not show_plots:
+        matplotlib.use('Agg')
 
     q_image = read_image(image_dir / query_name)
     if loc.get('covisibility_clustering', False):
@@ -137,3 +153,7 @@ def visualize_loc_from_log(image_dir, query_name, loc, reconstruction=None,
         opts = dict(pos=(0.01, 0.01), fs=5, lcolor=None, va='bottom')
         add_text(0, query_name, **opts)
         add_text(1, db_name, **opts)
+        #Path('/root/dir/sub/file.ext').stem
+        if save_plots:
+            save_plot_path = str(outputs_dir / f'{Path(query_name).stem}-{Path(db_name).stem}_inliers-{sum(inliers_db)}-{len(inliers_db)}.jpg')
+            save_plot(save_plot_path)

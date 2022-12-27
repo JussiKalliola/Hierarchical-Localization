@@ -217,7 +217,7 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
         #Tr = get_scan_pose(dataset_dir, r)
         pose_path = ""
 
-        for p in (dataset_dir / 'images' / 'poses/').iterdir():
+        for p in (images_path / 'poses/').iterdir():
             if '.DS' in str(p):
                 continue
 
@@ -262,7 +262,7 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
 
         #print(str(r), img_id)
         depthmap_path = ""
-        for p in (dataset_dir / 'images' / 'depth/').iterdir():
+        for p in (images_path / 'depth/').iterdir():
             if '.DS' in str(p):
                 continue
             d_id = int(str(p)[:-4].split("_")[-1])
@@ -271,7 +271,7 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
                 break
 
         confmap_path = ""
-        for p in (dataset_dir / 'images' / 'confidence/').iterdir():
+        for p in (images_path / 'confidence/').iterdir():
             if '.DS' in str(p):
                 continue
             c_id = int(str(p)[:-4].split("_")[-1])
