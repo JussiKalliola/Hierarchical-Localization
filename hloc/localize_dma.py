@@ -9,6 +9,8 @@ import pickle
 import cv2
 import pycolmap
 
+import transforms3d as t3d
+
 import struct
 from os.path import join
 import math
@@ -463,6 +465,16 @@ def pose_from_cluster(dataset_dir, images_path, q, retrieved, feature_file, matc
         #Rt = np.c_[R, Tvar.T]
 
         #print(Rt)
+
+        def colmap2ros_coord_transform(tvec_col, qvec_col):
+            qinv = t3d.quaternions.qinverse(qvec_col)
+            tvec_rot = t3d.quaternions.rotate_vector(-tvec_col, qinv)
+            tvec_ros = np.array([ tvec_rot[2], -tvec_rot[0], -tvec_rot[1]])
+            qvec_ros = np.array( [qinv[0], qinv[3], -qinv[1], -qinv[2] ])
+            return tvec_ros, qvec_ros
+
+
+        ret["tvec"], ret["qvec"] = colmap2ros_coord_transform(ret["tvec"], ret["qvec"])
 
         ret["Rt"] = R
 
